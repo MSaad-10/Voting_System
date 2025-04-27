@@ -7,7 +7,7 @@ MYSQL* conn;
 MYSQL_RES* res;
 MYSQL_ROW row;
 
-// No Changes required
+// No Changes required in this section as this is just for connecting the C++ to Mysql
 
 void connectDatabase() {
     conn = mysql_init(0);
@@ -19,6 +19,9 @@ void connectDatabase() {
     }
 }
 
+// ====================================================================================
+
+// This class is used to check whether the election has started or not yet 
 
 class VotingControl {
 public:
@@ -35,6 +38,10 @@ public:
     }
 };
 
+// ====================================================================================
+
+// USER class (The parent class)
+
 class User {
 protected:
     string username, password, role;
@@ -43,6 +50,10 @@ public:
     virtual bool login() = 0;
     virtual void menu() = 0;
 };
+
+// ====================================
+
+// VOTER class
 
 class Voter : public User {
 public:
@@ -134,8 +145,6 @@ public:
         cout << " Vote cast successfully! Thank you for voting.\n";
     }
 
-
-
     void menu() override {
         int op;
         do {
@@ -148,6 +157,81 @@ public:
         } while (op != 2);
     }
 };
+
+// ===================================================================================================
+
+
+// CANDIDATE class
+
+class Candidate : public User {
+public:
+    bool login() override {
+        cout << "Username: "; cin >> username;
+        cout << "Password: "; cin >> password;
+        string query = "SELECT id FROM Candidates WHERE username='" + username + "' AND password='" + password + "'";
+        if (mysql_query(conn, query.c_str()) != 0) {
+            cout << "Error: " << mysql_error(conn) << endl;
+            return false;
+        }
+        res = mysql_store_result(conn);
+        bool success = (mysql_num_rows(res) > 0);
+        mysql_free_result(res); // Free the result to avoid memory leaks
+        return success;
+    }
+
+    void getVoteCount() {
+        string query = "SELECT votes FROM Candidates WHERE username='" + username + "' AND password='" + password + "'";
+        if (mysql_query(conn, query.c_str()) != 0) {
+            cout << "Error fetching candidate info: " << mysql_error(conn) << endl;
+            return;
+        }
+        res = mysql_store_result(conn);
+        if (mysql_num_rows(res) == 0) {
+            cout << "No candidate found with your credentials.\n";
+            mysql_free_result(res);
+            return;
+        }
+        row = mysql_fetch_row(res);
+        cout << "Total Votes: " << row[0] << endl;
+        mysql_free_result(res);
+           
+    }
+    void getCandidateInfo() {
+        string query = "SELECT id, username, party, city, votes, title FROM Candidates WHERE username='" + username + "' AND password='" + password + "'";
+        if (mysql_query(conn, query.c_str()) != 0) {
+            cout << "Error fetching candidate info: " << mysql_error(conn) << endl;
+            return;
+        }
+        res = mysql_store_result(conn);
+        if (mysql_num_rows(res) == 0) {
+            cout << "No candidate found with your credentials.\n";
+            mysql_free_result(res);
+            return;
+        }
+        row = mysql_fetch_row(res);
+        cout << "\nYour Candidate Information:\n";
+        cout << "ID: " << row[0] << ", Username: " << row[1] << ", Party: " << row[2] << ", City: " << row[3] << ", Title: " << row[5] << endl;
+        mysql_free_result(res);
+    }
+
+    void menu() override {
+        int op;
+        do {
+            cout << "\nCandidate Menu\n1. Get Total Votes\n2. Candidate Information\n3. Exit\nChoice: ";
+            cin >> op;
+            switch (op) {
+            case 1: getVoteCount(); break;
+            case 2: getCandidateInfo(); break;
+            case 3: break;
+            default: cout << "Invalid choice. Try again.\n";
+            }
+        } while (op != 3); // Exit on option 3
+    }
+};
+
+// ===================================================================================================
+
+// ADMIN class
 
 class Admin : public User {
 public:
@@ -162,10 +246,11 @@ public:
     }
 
     void addCandidate() {
-        string party, city;
+        string party, city, name, title;
+
         cout << "Enter party name: "; cin >> party;
         cout << "Enter city name: "; cin >> city;
-        string query = "INSERT INTO Candidates (party, city) VALUES ('" + party + "', '" + city + "')";
+        string query = "INSERT INTO Candidates (party, city, name, title) VALUES ('" + party + "', '" + city + "', '" + name+ "', '" + title + "')";
         mysql_query(conn, query.c_str());
         cout << "Candidate added successfully!\n";
     }
@@ -219,16 +304,19 @@ void voterSignup() {
     }
 }
 
+
+// Main Function
+
 int main() {
     connectDatabase();
 
     
     while (true) {
         int type;
-        cout << "\n1. Admin Login\n2. Voter Menu\n3. Exit\nChoice: ";
+        cout << "\n1. Admin Login\n2. Voter Menu\n3. Candidate Login\n4. Exit \nChoice: ";
         cin >> type;
 
-        if (type == 3) break;
+        if (type == 4) break;
 
         if (type == 1) {
             Admin admin;
@@ -256,7 +344,17 @@ int main() {
                 }
             }
         }
+        if (type == 3) {
+            Candidate cand;
+            if (cand.login()) {
+                cand.menu();
+            }
+            else {
+                cout << "Invalid credentials.\n";
+            }
+        }
     }
+   
 
     mysql_close(conn);
     return 0;

@@ -16,9 +16,11 @@ select * from Users;
 -- Table for candidates
 CREATE TABLE Candidates (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
     party VARCHAR(50) NOT NULL,
     city VARCHAR(50) NOT NULL,
-    votes INT DEFAULT 0
+    votes INT DEFAULT 0,
+    title ENUM ('MPA', 'MNA') NOT NULL
 );
 
 select * from Candidates;
@@ -62,3 +64,4 @@ INSERT INTO Candidates (party, city) VALUES
 ('Party B', 'Gilgit'),
 ('Party C', 'Gilgit');
 
+drop database voting_system;
