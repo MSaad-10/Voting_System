@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <mysql.h>
+#include "Validation.h"
 using namespace std;
 
 MYSQL* conn;
@@ -58,8 +59,8 @@ public:
 class Voter : public User {
 public:
     bool login() override {
-        cout << "Username: "; cin >> username;
-        cout << "Password: "; cin >> password;
+        username = Validation::getNonEmptyString("Username: ");
+        password = Validation::getNonEmptyString("Password: ");
         string query = "SELECT role FROM Users WHERE username='" + username + "' AND password='" + password + "' AND role='voter'";
         mysql_query(conn, query.c_str());
         res = mysql_store_result(conn);
@@ -148,8 +149,8 @@ public:
     void menu() override {
         int op;
         do {
-            cout << "\nVoter Menu\n1. Cast Vote\n2. Logout\nChoice: ";
-            cin >> op;
+            cout << "\nVoter Menu\n1. Cast Vote\n2. Logout\n";
+            op = Validation::getValidatedInt("Choice: ", 1, 2);
             switch (op) {
             case 1: castVote();
                 break;
@@ -158,7 +159,7 @@ public:
     }
 };
 
-// ===================================================================================================
+// ============================================================================================
 
 
 // CANDIDATE class
@@ -217,8 +218,8 @@ public:
     void menu() override {
         int op;
         do {
-            cout << "\nCandidate Menu\n1. Get Total Votes\n2. Candidate Information\n3. Exit\nChoice: ";
-            cin >> op;
+            cout << "\nCandidate Menu\n1. Get Total Votes\n2. Candidate Information\n3. Exit\n";
+            op = Validation::getValidatedInt("Choice: ", 1, 3);
             switch (op) {
             case 1: getVoteCount(); break;
             case 2: getCandidateInfo(); break;
@@ -277,8 +278,8 @@ public:
     void menu() override {
         int op;
         do {
-            cout << "\nAdmin Menu\n1. Start Voting\n2. Stop Voting\n3. Add Candidate\n4. Remove Candidate\n5. View Results\n6. Logout\nChoice: ";
-            cin >> op;
+            cout << "\nAdmin Menu\n1. Start Voting\n2. Stop Voting\n3. Add Candidate\n4. Remove Candidate\n5. View Results\n6. Logout\n";
+            op = Validation::getValidatedInt("Choice: ", 1, 6);
             switch (op) {
             case 1: VotingControl::setVotingStatus(true); break;
             case 2: VotingControl::setVotingStatus(false); break;
@@ -292,9 +293,9 @@ public:
 
 void voterSignup() {
     string username, password, city;
-    cout << "Choose username: "; cin >> username;
-    cout << "Choose password: "; cin >> password;
-    cout << "Enter your city: "; cin >> city;
+    cout << "Choose username: "; username = Validation::getNonEmptyString("Username: ");
+    cout << "Choose password: "; password = Validation::getNonEmptyString("Password: ");
+    cout << "Enter your city: "; city = Validation::getNonEmptyString("City: ");
     string query = "INSERT INTO Users (username, password, role, city) VALUES ('" + username + "', '" + password + "', 'voter', '" + city + "')";
     if (mysql_query(conn, query.c_str()) == 0) {
         cout << "Signup successful! You can now login.\n";
@@ -313,8 +314,8 @@ int main() {
     
     while (true) {
         int type;
-        cout << "\n1. Admin Login\n2. Voter Menu\n3. Candidate Login\n4. Exit \nChoice: ";
-        cin >> type;
+        cout << "\n1. Admin Login\n2. Voter Menu\n3. Candidate Login\n4. Exit \n";
+        type = Validation::getValidatedInt("Choice: ", 1, 4);
 
         if (type == 4) break;
 
@@ -329,8 +330,8 @@ int main() {
         }
         else if (type == 2) {
             int op;
-            cout << "\n1. Sign Up\n2. Sign In\nChoice: ";
-            cin >> op;
+            cout << "\n1. Sign Up\n2. Sign In\n";
+            op = Validation::getValidatedInt("Choice: ", 1, 2);
             if (op == 1) {
                 voterSignup();
             }

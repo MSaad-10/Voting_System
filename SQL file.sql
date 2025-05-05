@@ -16,7 +16,8 @@ select * from Users;
 -- Table for candidates
 CREATE TABLE Candidates (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    password VARCHAR(50) NOT NULL unique,
     party VARCHAR(50) NOT NULL,
     city VARCHAR(50) NOT NULL,
     votes INT DEFAULT 0,
@@ -32,7 +33,7 @@ CREATE TABLE Votes (
     FOREIGN KEY (username) REFERENCES Users(username),
     FOREIGN KEY (candidate_id) REFERENCES Candidates(id)
 );
-
+select * from votes;
 -- Table for controlling voting status
 CREATE TABLE VotingStatus (
     id INT PRIMARY KEY,
@@ -52,16 +53,16 @@ INSERT INTO Users (username, password, role, city) VALUES
 ('voter4', 'pass4', 'voter', 'Quetta'),
 ('voter5', 'pass5', 'voter', 'Gilgit'),
 ('voter6','pass6','voter','Islamabad');
-INSERT INTO Candidates (party, city) VALUES
-('Party A', 'Lahore'),
-('Party B', 'Lahore'),
-('Party A', 'Karachi'),
-('Party B', 'Karachi'),
-('Party A', 'Peshawar'),
-('Party B', 'Peshawar'),
-('Party A', 'Quetta'),
-('Party C', 'Quetta'),
-('Party B', 'Gilgit'),
-('Party C', 'Gilgit');
+INSERT INTO Candidates (username, password, party, city, title) VALUES
+('candidate1', 'pass123', 'Party A', 'Lahore', 'MNA'),
+('candidate2', 'pass456', 'Party B', 'Lahore', 'MPA'),
+('candidate3', 'pass789', 'Party A', 'Karachi', 'MNA'),
+('candidate4', 'pass101', 'Party B', 'Karachi', 'MPA'),
+('candidate5', 'pass112', 'Party A', 'Peshawar', 'MNA'),
+('candidate6', 'pass131', 'Party B', 'Peshawar', 'MPA'),
+('candidate7', 'pass415', 'Party A', 'Quetta', 'MNA'),
+('candidate8', 'pass161', 'Party C', 'Quetta', 'MPA'),
+('candidate9', 'pass718', 'Party B', 'Gilgit', 'MNA'),
+('candidate10', 'pass191', 'Party C', 'Gilgit', 'MPA');
 
 drop database voting_system;
