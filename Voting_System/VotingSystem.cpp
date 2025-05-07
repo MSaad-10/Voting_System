@@ -61,7 +61,7 @@ public:
     bool login() override {
         username = Validation::getNonEmptyString("Username: ");
         password = Validation::getNonEmptyString("Password: ");
-        string query = "SELECT role FROM Users WHERE username='" + username + "' AND password='" + password + "' AND role='voter'";
+        string query = "SELECT role FROM Voters WHERE username='" + username + "' AND password='" + password + "' AND role='voter'";
         mysql_query(conn, query.c_str());
         res = mysql_store_result(conn);
         if (mysql_num_rows(res) > 0)
@@ -71,33 +71,11 @@ public:
         return false;
     }
 
-    void castVote() {
-        if (!VotingControl::isVotingOpen()) {
-            cout << "Voting is currently closed.\n";
-            return;
-        }
+    void castToMPA(string userCity) {
 
-        // Get the voter's city
-        string query = "SELECT city FROM Users WHERE username='" + username + "'";
-        if (mysql_query(conn, query.c_str()) != 0) {
-            cout << "Error fetching city: " << mysql_error(conn) << endl;
-            return;
-        }
-        res = mysql_store_result(conn);
-        if (!res || mysql_num_rows(res) == 0) {
-            cout << "Could not find your city. Please contact admin.\n";
-            mysql_free_result(res);
-            return;
-        }
-
-        row = mysql_fetch_row(res);
-        string userCity = row[0];
-        mysql_free_result(res); // Free after city fetch
-
-        cout << "\nCandidates in your city (" << userCity << "):\n";
-
+        cout << "\nMPA Candidates in your city (" << userCity << "):\n"; // check this 
         // List candidates from user's city
-        query = "SELECT id, party FROM Candidates WHERE city='" + userCity + "'";
+        string query = "SELECT id, party FROM Candidates WHERE city='" + userCity + "' AND title= 'MPA' ";
         if (mysql_query(conn, query.c_str()) != 0) {
             cout << "Error fetching candidates: " << mysql_error(conn) << endl;
             return;
@@ -114,6 +92,7 @@ public:
             cout << "Candidate ID: " << row[0] << " | Party: " << row[1] << endl;
         }
         mysql_free_result(res); // Free after showing candidates
+
 
         // Now voting
         int voteId;
@@ -144,6 +123,98 @@ public:
         mysql_query(conn, updateQuery.c_str());
 
         cout << " Vote cast successfully! Thank you for voting.\n";
+
+    }
+    void castToMNA(string userCity) {
+
+        cout << "\nMNA Candidates in your city (" << userCity << "):\n"; // check this 
+        // List candidates from user's city
+        string query = "SELECT id, party FROM Candidates WHERE city='" + userCity + "' AND title= 'MNA' ";
+        if (mysql_query(conn, query.c_str()) != 0) {
+            cout << "Error fetching candidates: " << mysql_error(conn) << endl;
+            return;
+        }
+        res = mysql_store_result(conn);
+
+        if (!res || mysql_num_rows(res) == 0) {
+            cout << "No candidates available in your city.\n";
+            mysql_free_result(res);
+            return;
+        }
+
+        while ((row = mysql_fetch_row(res))) {
+            cout << "Candidate ID: " << row[0] << " | Party: " << row[1] << endl;
+        }
+        mysql_free_result(res); // Free after showing candidates
+
+
+        // Now voting
+        int voteId;
+        cout << "\nEnter candidate ID to vote for: ";
+        cin >> voteId;
+
+        // Check if already voted
+        string checkQuery = "SELECT * FROM Votes WHERE username='" + username + "'";
+        mysql_query(conn, checkQuery.c_str());
+        res = mysql_store_result(conn);
+
+        if (mysql_num_rows(res) > 0) {
+            cout << "You have already voted!\n";
+            mysql_free_result(res);
+            return;
+        }
+        mysql_free_result(res);
+
+        // Insert vote
+        string voteQuery = "INSERT INTO Votes (username, candidate_id) VALUES ('" + username + "', " + to_string(voteId) + ")";
+        if (mysql_query(conn, voteQuery.c_str()) != 0) {
+            cout << "Error casting vote: " << mysql_error(conn) << endl;
+            return;
+        }
+
+        // Update candidate votes
+        string updateQuery = "UPDATE Candidates SET votes = votes + 1 WHERE id=" + to_string(voteId);
+        mysql_query(conn, updateQuery.c_str());
+
+        cout << " Vote cast successfully! Thank you for voting.\n";
+
+    }
+
+    void castVote() {
+        if (!VotingControl::isVotingOpen()) {
+            cout << "Voting is currently closed.\n";
+            return;
+        }
+        
+        // Get the voter's city
+        string query = "SELECT city FROM Voters WHERE username='" + username + "'";
+        if (mysql_query(conn, query.c_str()) != 0) {
+            cout << "Error fetching city: " << mysql_error(conn) << endl;
+            return;
+        }
+        res = mysql_store_result(conn);
+        if (!res || mysql_num_rows(res) == 0) {
+            cout << "Could not find your city. Please contact admin.\n";
+            mysql_free_result(res);
+            return;
+        }
+
+        row = mysql_fetch_row(res);
+        string userCity = row[0];
+        mysql_free_result(res); // Free after city fetch
+
+        int choice;
+        do {
+            cout << "\nCast Vote to: \n1. MNA\n2. MPA\n3. Exit \n";
+            choice = Validation::getValidatedInt("Choice: ", 1, 3);
+            switch (choice) {
+            case 1: castToMNA(userCity);
+                break;
+            case 2: castToMPA(userCity);
+                break;
+            }
+        } while (choice != 3);
+
     }
 
     void menu() override {
@@ -195,7 +266,7 @@ public:
         row = mysql_fetch_row(res);
         cout << "Total Votes: " << row[0] << endl;
         mysql_free_result(res);
-           
+
     }
     void getCandidateInfo() {
         string query = "SELECT id, username, party, city, votes, title FROM Candidates WHERE username='" + username + "' AND password='" + password + "'";
@@ -230,7 +301,7 @@ public:
     }
 };
 
-// ===================================================================================================
+// =============================================================================================
 
 // ADMIN class
 
@@ -251,7 +322,7 @@ public:
 
         cout << "Enter party name: "; cin >> party;
         cout << "Enter city name: "; cin >> city;
-        string query = "INSERT INTO Candidates (party, city, name, title) VALUES ('" + party + "', '" + city + "', '" + name+ "', '" + title + "')";
+        string query = "INSERT INTO Candidates (party, city, name, title) VALUES ('" + party + "', '" + city + "', '" + name + "', '" + title + "')";
         mysql_query(conn, query.c_str());
         cout << "Candidate added successfully!\n";
     }
@@ -311,7 +382,7 @@ void voterSignup() {
 int main() {
     connectDatabase();
 
-    
+
     while (true) {
         int type;
         cout << "\n1. Admin Login\n2. Voter Menu\n3. Candidate Login\n4. Exit \n";
@@ -355,7 +426,7 @@ int main() {
             }
         }
     }
-   
+
 
     mysql_close(conn);
     return 0;
