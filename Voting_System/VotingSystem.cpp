@@ -318,19 +318,32 @@ public:
     }
 
     void addCandidate() {
-        string party, city, name, title;
+        string party, city, title;
 
-        cout << "Enter party name: "; cin >> party;
-        cout << "Enter city name: "; cin >> city;
-        string query = "INSERT INTO Candidates (party, city, name, title) VALUES ('" + party + "', '" + city + "', '" + name + "', '" + title + "')";
-        mysql_query(conn, query.c_str());
+        party = Validation::getNonEmptyString("Enter party name: ");
+        city = Validation::getNonEmptyString("Enter city name: ");
+		title = Validation::getNonEmptyString("Enter title (MNA/MPA): ");
+        string query = "INSERT INTO Candidates (party, city, title) VALUES ('" + party + "', '" + city + "', '" + title + "')";
+        if (mysql_query(conn, query.c_str()) != 0) {
+            cout << "Error casting vote: " << mysql_error(conn) << endl;
+            return;
+        }
         cout << "Candidate added successfully!\n";
     }
 
     void removeCandidate() {
-        int id;
-        cout << "Enter candidate ID to remove: ";
-        cin >> id;
+        string Newquery = "SELECT id, city, party, title FROM Candidates";
+        mysql_query(conn, Newquery.c_str());
+        res = mysql_store_result(conn);
+		cout << "\nCandidates List:\n";
+        int count = 0;
+        while ((row = mysql_fetch_row(res))) {
+            cout << "ID: " << row[0] << ", City: " << row[1] << ", Party: " << row[2] << ", Title: " << row[3] << endl;
+            count++;
+        }
+        mysql_free_result(res); // Free after showing candidates
+
+        int id = Validation::getValidatedInt("Enter candidate ID to remove : ", 1, count);
         string query = "DELETE FROM Candidates WHERE id=" + to_string(id);
         mysql_query(conn, query.c_str());
         cout << "Candidate removed successfully!\n";
@@ -364,9 +377,9 @@ public:
 
 void voterSignup() {
     string username, password, city;
-    cout << "Choose username: "; username = Validation::getNonEmptyString("Username: ");
-    cout << "Choose password: "; password = Validation::getNonEmptyString("Password: ");
-    cout << "Enter your city: "; city = Validation::getNonEmptyString("City: ");
+    username = Validation::getNonEmptyString("Choose Username: ");
+    password = Validation::getNonEmptyString("Choose Password: ");
+    city = Validation::getNonEmptyString("Enter your City: ");
     string query = "INSERT INTO Users (username, password, role, city) VALUES ('" + username + "', '" + password + "', 'voter', '" + city + "')";
     if (mysql_query(conn, query.c_str()) == 0) {
         cout << "Signup successful! You can now login.\n";

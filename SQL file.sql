@@ -28,7 +28,9 @@ select * from Voters;
 	
 
 
--- Table for candidates
+
+-- CANDIDATES
+
 CREATE TABLE Candidates (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
@@ -38,8 +40,30 @@ CREATE TABLE Candidates (
     votes INT DEFAULT 0,
     title ENUM ('MPA', 'MNA') NOT NULL
 );
-select * from Candidates;
 
+DELIMITER //
+CREATE TRIGGER set_usernamepass_before_insert
+BEFORE INSERT ON Candidates
+FOR EACH ROW
+BEGIN
+    -- Get the next auto-increment value
+    DECLARE next_id INT;
+    
+    SELECT AUTO_INCREMENT INTO next_id
+    FROM information_schema.TABLES
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Candidates';
+    
+    -- Set username and password based on the next ID
+    SET NEW.username = CONCAT('candidate', next_id);
+    SET NEW.password = CONCAT('pass', next_id);
+END//
+DELIMITER ;
+
+
+
+drop trigger set_usernamepass_before_insert;
+
+select * from Candidates;
 
 
 
@@ -83,15 +107,15 @@ INSERT INTO Voters (username, password, role, city, MNA_vote, MPA_vote, Vote_sta
 
 -- INSERTING DATA INTO CANDIDATES
 INSERT INTO Candidates (username, password, party, city, title) VALUES
-('candidate1', 'pass123', 'Party A', 'Lahore', 'MNA'),
-('candidate2', 'pass456', 'Party B', 'Lahore', 'MPA'),
-('candidate3', 'pass789', 'Party A', 'Karachi', 'MNA'),
-('candidate4', 'pass101', 'Party B', 'Karachi', 'MPA'),
-('candidate5', 'pass112', 'Party A', 'Karachi', 'MNA'),
-('candidate6', 'pass131', 'Party B', 'Lahore', 'MPA'),
-('candidate7', 'pass415', 'Party A', 'Quetta', 'MNA'),
-('candidate8', 'pass161', 'Party C', 'Quetta', 'MPA'),
-('candidate9', 'pass718', 'Party B', 'Gilgit', 'MNA'),
-('candidate10', 'pass191', 'Party C', 'Gilgit', 'MPA');
+('candidate1', 'pass1', 'Party A', 'Lahore', 'MNA'),
+('candidate2', 'pass2', 'Party B', 'Lahore', 'MPA'),
+('candidate3', 'pass3', 'Party A', 'Karachi', 'MNA'),
+('candidate4', 'pass4', 'Party B', 'Karachi', 'MPA'),
+('candidate5', 'pass5', 'Party A', 'Karachi', 'MNA'),
+('candidate6', 'pass6', 'Party B', 'Lahore', 'MPA'),
+('candidate7', 'pass7', 'Party A', 'Quetta', 'MNA'),
+('candidate8', 'pass8', 'Party C', 'Quetta', 'MPA'),
+('candidate9', 'pass9', 'Party B', 'Gilgit', 'MNA'),
+('candidate10', 'pass10', 'Party C', 'Gilgit', 'MPA');
 
 drop database voting_system;
