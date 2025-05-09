@@ -12,7 +12,7 @@ MYSQL_ROW row;
 
 void connectDatabase() {
     conn = mysql_init(0);
-    conn = mysql_real_connect(conn, "localhost", "root", "mysql01", "voting_system", 3306, NULL, 0);
+    conn = mysql_real_connect(conn, "localhost", "root", "UsaPak123_", "voting_system", 3306, NULL, 0);
     if (conn) cout << "Database Connected Successfully!\n";
     else {
         cout << "Database Connection Failed: " << mysql_error(conn) << endl;
@@ -71,65 +71,11 @@ public:
         return false;
     }
 
-    void castToMPA(string userCity) {
-
-        cout << "\nMPA Candidates in your city (" << userCity << "):\n"; // check this 
-        // List candidates from user's city
-        string query = "SELECT id, party FROM Candidates WHERE city='" + userCity + "' AND title= 'MPA' ";
-        if (mysql_query(conn, query.c_str()) != 0) {
-            cout << "Error fetching candidates: " << mysql_error(conn) << endl;
-            return;
-        }
-        res = mysql_store_result(conn);
-
-        if (!res || mysql_num_rows(res) == 0) {
-            cout << "No candidates available in your city.\n";
-            mysql_free_result(res);
-            return;
-        }
-
-        while ((row = mysql_fetch_row(res))) {
-            cout << "Candidate ID: " << row[0] << " | Party: " << row[1] << endl;
-        }
-        mysql_free_result(res); // Free after showing candidates
-
-
-        // Now voting
-        int voteId;
-        cout << "\nEnter candidate ID to vote for: ";
-        cin >> voteId;
-
-        // Check if already voted
-        string checkQuery = "SELECT * FROM Votes WHERE username='" + username + "'";
-        mysql_query(conn, checkQuery.c_str());
-        res = mysql_store_result(conn);
-
-        if (mysql_num_rows(res) > 0) {
-            cout << "You have already voted!\n";
-            mysql_free_result(res);
-            return;
-        }
-        mysql_free_result(res);
-
-        // Insert vote
-        string voteQuery = "INSERT INTO Votes (username, candidate_id) VALUES ('" + username + "', " + to_string(voteId) + ")";
-        if (mysql_query(conn, voteQuery.c_str()) != 0) {
-            cout << "Error casting vote: " << mysql_error(conn) << endl;
-            return;
-        }
-
-        // Update candidate votes
-        string updateQuery = "UPDATE Candidates SET votes = votes + 1 WHERE id=" + to_string(voteId);
-        mysql_query(conn, updateQuery.c_str());
-
-        cout << " Vote cast successfully! Thank you for voting.\n";
-
-    }
     void castToMNA(string userCity) {
+        cout << "\nMNA Candidates in your city (" << userCity << "):\n";
 
-        cout << "\nMNA Candidates in your city (" << userCity << "):\n"; // check this 
         // List candidates from user's city
-        string query = "SELECT id, party FROM Candidates WHERE city='" + userCity + "' AND title= 'MNA' ";
+        string query = "SELECT id, party FROM Candidates WHERE city='" + userCity + "' AND title='MNA'";
         if (mysql_query(conn, query.c_str()) != 0) {
             cout << "Error fetching candidates: " << mysql_error(conn) << endl;
             return;
@@ -145,40 +91,86 @@ public:
         while ((row = mysql_fetch_row(res))) {
             cout << "Candidate ID: " << row[0] << " | Party: " << row[1] << endl;
         }
-        mysql_free_result(res); // Free after showing candidates
-
+        mysql_free_result(res);
 
         // Now voting
         int voteId;
         cout << "\nEnter candidate ID to vote for: ";
         cin >> voteId;
 
-        // Check if already voted
-        string checkQuery = "SELECT * FROM Votes WHERE username='" + username + "'";
-        mysql_query(conn, checkQuery.c_str());
+        // Check if already voted for MNA
+        string checkQuery = "SELECT * FROM Votes WHERE username='" + username + "' AND vote_type='MNA'";
+        if (mysql_query(conn, checkQuery.c_str()) != 0) {
+            cout << "Error checking existing vote: " << mysql_error(conn) << endl;
+            return;
+        }
         res = mysql_store_result(conn);
-
         if (mysql_num_rows(res) > 0) {
-            cout << "You have already voted!\n";
+            cout << "You have already voted for MNA!\n";
             mysql_free_result(res);
             return;
         }
         mysql_free_result(res);
 
         // Insert vote
-        string voteQuery = "INSERT INTO Votes (username, candidate_id) VALUES ('" + username + "', " + to_string(voteId) + ")";
+        string voteQuery = "INSERT INTO Votes (username, candidate_id, vote_type) VALUES ('" + username + "', " + to_string(voteId) + ", 'MNA')";
         if (mysql_query(conn, voteQuery.c_str()) != 0) {
             cout << "Error casting vote: " << mysql_error(conn) << endl;
             return;
         }
 
-        // Update candidate votes
-        string updateQuery = "UPDATE Candidates SET votes = votes + 1 WHERE id=" + to_string(voteId);
-        mysql_query(conn, updateQuery.c_str());
+        // Mark MNA_vote as true
+        string updateVoterQuery = "UPDATE Voters SET MNA_vote=1 WHERE username='" + username + "'";
+        mysql_query(conn, updateVoterQuery.c_str());
 
-        cout << " Vote cast successfully! Thank you for voting.\n";
-
+        cout << "Vote cast successfully! Thank you for voting.\n";
     }
+	void castToMPA(string userCity) {
+		cout << "\nMPA Candidates in your city (" << userCity << "):\n";
+		// List candidates from user's city
+		string query = "SELECT id, party FROM Candidates WHERE city='" + userCity + "' AND title='MPA'";
+		if (mysql_query(conn, query.c_str()) != 0) {
+			cout << "Error fetching candidates: " << mysql_error(conn) << endl;
+			return;
+		}
+		res = mysql_store_result(conn);
+		if (!res || mysql_num_rows(res) == 0) {
+			cout << "No candidates available in your city.\n";
+			mysql_free_result(res);
+			return;
+		}
+		while ((row = mysql_fetch_row(res))) {
+			cout << "Candidate ID: " << row[0] << " | Party: " << row[1] << endl;
+		}
+		mysql_free_result(res);
+		// Now voting
+		int voteId;
+		cout << "\nEnter candidate ID to vote for: ";
+		cin >> voteId;
+		// Check if already voted for MPA
+		string checkQuery = "SELECT * FROM Votes WHERE username='" + username + "' AND vote_type='MPA'";
+		if (mysql_query(conn, checkQuery.c_str()) != 0) {
+			cout << "Error checking existing vote: " << mysql_error(conn) << endl;
+			return;
+		}
+		res = mysql_store_result(conn);
+		if (mysql_num_rows(res) > 0) {
+			cout << "You have already voted for MPA!\n";
+			mysql_free_result(res);
+			return;
+		}
+		mysql_free_result(res);
+		// Insert vote
+		string voteQuery = "INSERT INTO Votes (username, candidate_id, vote_type) VALUES ('" + username + "', " + to_string(voteId) + ", 'MPA')";
+		if (mysql_query(conn, voteQuery.c_str()) != 0) {
+			cout << "Error casting vote: " << mysql_error(conn) << endl;
+			return;
+		}
+		// Mark MPA_vote as true
+		string updateVoterQuery = "UPDATE Voters SET MPA_vote=1 WHERE username='" + username + "'";
+		mysql_query(conn, updateVoterQuery.c_str());
+		cout << "Vote cast successfully! Thank you for voting.\n";
+	}
 
     void castVote() {
         if (!VotingControl::isVotingOpen()) {
